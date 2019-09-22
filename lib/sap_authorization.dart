@@ -71,6 +71,9 @@ class SapStartParams {
   /// Display parameters of connecting to the server on the screen
   final bool opVisible;
 
+  /// Start show parameters of connecting to the server from menu item
+  final bool opShowFromMenu;
+
   /// Using a secondary account
   final bool useSecondaryLogin;
 
@@ -118,6 +121,7 @@ class SapStartParams {
     this.opLoadSave = true,
     this.opEdit = true,
     this.opVisible = true,
+    this.opShowFromMenu = false,
     this.useSecondaryLogin = false,
     this.offLineLoginCan = false,
     this.offLineLoginButton = false,
@@ -639,7 +643,7 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     final expandWidgetList = List<Widget>();
-    final popupMenuItemList = List<PopupMenuItem<_LoginSubmitMode>>();
+    final popupMenuItemList = List<PopupMenuItem<VoidCallback>>();
     List<Widget> actionList;
 
     if (params.showLanguage) {
@@ -649,29 +653,6 @@ class _LoginPageState extends State<LoginPage> {
 
     expandWidgetList.add(inputHost);
     expandWidgetList.add(inputMandant);
-
-    if (params.useSecondaryLogin) {
-      if (params.showSapLogin) {
-        expandWidgetList.add(inputSapLogin);
-        expandWidgetList.add(inputSapPassword);
-      }
-      popupMenuItemList.add(PopupMenuItem<_LoginSubmitMode>(
-          child: Text(_translate(context, "ChangePassword")),
-          value: _LoginSubmitMode.ChangePassword)
-      );
-      popupMenuItemList.add(PopupMenuItem<_LoginSubmitMode>(
-          child: Text(_translate(context, "SavePassword")),
-          value: _LoginSubmitMode.SavePassword)
-      );
-    }
-
-    if (popupMenuItemList.isNotEmpty) {
-      actionList = List<Widget>();
-      actionList.add(PopupMenuButton(
-          itemBuilder: (BuildContext context) => popupMenuItemList,
-          onSelected: (loginSubmitMode) => _submit(loginSubmitMode)
-      ));
-    }
 
     final expansionPanel = ExpansionPanelList(
       expansionCallback: (int index, bool isExpanded) {
@@ -703,6 +684,40 @@ class _LoginPageState extends State<LoginPage> {
       ],
     );
 
+    if (params.opShowFromMenu){
+      popupMenuItemList.add(PopupMenuItem<VoidCallback>(
+          child: Text(_translate(context, "ConnectionOptions")),
+          value: () {
+            setState(() {
+              _connectOptionsExpanded = true;
+            });
+          })
+      );
+    }
+
+    if (params.useSecondaryLogin) {
+      if (params.showSapLogin) {
+        expandWidgetList.add(inputSapLogin);
+        expandWidgetList.add(inputSapPassword);
+      }
+      popupMenuItemList.add(PopupMenuItem<VoidCallback>(
+          child: Text(_translate(context, "ChangePassword")),
+          value: () => _submit(_LoginSubmitMode.ChangePassword))
+      );
+      popupMenuItemList.add(PopupMenuItem<VoidCallback>(
+          child: Text(_translate(context, "SavePassword")),
+          value: () => _submit(_LoginSubmitMode.SavePassword))
+      );
+    }
+
+    if (popupMenuItemList.isNotEmpty) {
+      actionList = List<Widget>();
+      actionList.add(PopupMenuButton(
+          itemBuilder: (BuildContext context) => popupMenuItemList,
+          onSelected: (callBack) => callBack()
+      ));
+    }
+
     final loginButton = Row( children: <Widget>[ Expanded( child: RaisedButton(
       key: Key('loginButton'),
       child: Text(
@@ -724,7 +739,7 @@ class _LoginPageState extends State<LoginPage> {
     ))]);
 
     final outWidgetList = List<Widget>();
-    if (params.opVisible) outWidgetList.add(expansionPanel);
+    if (params.opVisible && (_connectOptionsExpanded || !params.opShowFromMenu)) outWidgetList.add(expansionPanel);
     outWidgetList.add(inputLogin);
     outWidgetList.add(inputPassword);
     outWidgetList.add(Container( height: 20 ));

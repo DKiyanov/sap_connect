@@ -18,7 +18,7 @@ import 'wait_screen.dart';
 import 'sap_internationalization.dart';
 
 /// To register fake handlers [SapConnect.registerFakeHandler]
-typedef FetchPost = Post Function(String handlerType, String handlerID, String action, String actionData);
+typedef FetchPost = Future<Post> Function(String handlerType, String handlerID, String action, String actionData);
 
 // fake handlers are called instead of sending a request to the server for
 // corresponding handlerType
@@ -359,7 +359,7 @@ Future<Post> _fetchPost({
 
   final fakeHandler = _fakeHandlers[handlerType];
   if (fakeHandler != null) {
-    final post = fakeHandler(handlerType, handlerID, action, actionData);
+    final post = await fakeHandler(handlerType, handlerID, action, actionData);
     print("returStatus: ${post.returnStatus}; returnData: ${post.returnData}");
     return post;
   }

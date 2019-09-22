@@ -1,6 +1,7 @@
 import 'package:sap_connect/sap_connect.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
-Post fakeSapServer(String handlerType, String handlerID, String action, String actionData){
+Future<Post> fakeSapServer(String handlerType, String handlerID, String action, String actionData) async {
   final actionStr = '$handlerType/$handlerID/$action';
 
   print('action $actionStr data $actionData');
@@ -8,12 +9,15 @@ Post fakeSapServer(String handlerType, String handlerID, String action, String a
   String returnData;
   String returnStatus = PostStatus.Error;
 
-  final Map<String, String> answerMap = {
-    'SYS/SYS/ENTRY' : '',
-    'CLAS/YDK_CL_WEBS_FLIGHTS/GET_FLIGHTS' : '[{"CARRID":"AA","CONNID":"0017","FLDATE":"20141224"},{"CARRID":"AA","CONNID":"0017","FLDATE":"20150121"},{"CARRID":"AA","CONNID":"0017","FLDATE":"20150218"},{"CARRID":"AA","CONNID":"0017","FLDATE":"20150318"}]',
-  };
-
-  returnData = answerMap[actionStr];
+  switch (actionStr){
+    case 'SYS/SYS/ENTRY' :
+      await Future.delayed(const Duration(milliseconds: 500));
+      returnData = '';
+      break;
+    case 'CLAS/YDK_CL_WEBS_FLIGHTS/GET_FLIGHTS' :
+      returnData = await rootBundle.loadString('assets/flights.json');
+      break;
+  }
 
   if (returnData != null) {
     returnStatus = PostStatus.OK;

@@ -8,7 +8,7 @@ import 'fake_sap_server.dart';
 
 import 'flights.dart';
 
-bool kFakeSapServer = true; // true = simulation of work with a SAP server
+bool kFakeSapServer = true;
 
 void main() {
   Route _getRoute(RouteSettings settings) {

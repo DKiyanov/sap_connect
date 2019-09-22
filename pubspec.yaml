@@ -1,6 +1,6 @@
 name: sap_connect
 description: connection to SAP system
-version: 0.0.1
+version: 0.0.2
 author: Dmitriy Kiyanov <dmkiyanov@gmail.com>
 homepage: http://SAPtaskBar.ru
 
