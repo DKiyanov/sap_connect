@@ -8,7 +8,9 @@ import 'fake_sap_server.dart';
 
 import 'flights.dart';
 
+/// variable for switching between working with simulated SAP server (true) and a real SAP server (false)
 bool kFakeSapServer = true;
+// kFakeSapServer = false; // uncomment this line to connect to real SAP server
 
 void main() {
   Route _getRoute(RouteSettings settings) {
@@ -27,12 +29,10 @@ void main() {
 
   final sapStartParams = SapStartParams(
     nextRouteName: "/flights",
-    useSecondaryLogin: true,
   );
 
   if (kFakeSapServer) {
-    SapConnect.registerFakeHandler(HandlerType.System, fakeSapServer);
-    SapConnect.registerFakeHandler(HandlerType.Method, fakeSapServer);
+    kFakeHandler = fakeSapServer;
   }
 
   runApp( SapApplication(sapApplicationParams, sapStartParams) );

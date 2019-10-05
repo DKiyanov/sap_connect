@@ -1,6 +1,7 @@
-# sap_flights_simplest_demo
+# sap_connect examples
+at the moment there is only one example
 
-#### The simplest demo showing the features of the package sap_connect.
+## "[sap_flights_simplest_demo](https://github.com/DKiyanov/sap_connect/tree/master/example/sap_flights_simplest_demo)"
 Displays the connection screen to SAP server<br>
 After connecting to the SAP server, displays data from the sflights DB
 ![GIF showing / hiding connection settings and switching input language](https://raw.githubusercontent.com/DKiyanov/sap_connect/master/Login2SAPdemo.gif)

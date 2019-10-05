@@ -17,12 +17,11 @@ import 'sap_authorization_utils.dart';
 import 'wait_screen.dart';
 import 'sap_internationalization.dart';
 
-/// To register fake handlers [SapConnect.registerFakeHandler]
-typedef FetchPost = Future<Post> Function(String handlerType, String handlerID, String action, String actionData);
+/// To make fake handler, see kFakeHandler
+typedef FetchPost = Future<Post> Function(String handlerID, String action, String actionData);
 
-// fake handlers are called instead of sending a request to the server for
-// corresponding handlerType
-final _fakeHandlers = Map<String, FetchPost>();
+/// Fake handler are called instead of sending a request to the server
+FetchPost kFakeHandler;
 
 /// Standard statuses are usually returned as a result of the request.
 class PostStatus{
@@ -31,33 +30,6 @@ class PostStatus{
 
   /// Request completed successfully
   static const String OK    = "OK";
-}
-
-/// The types of handlers on the SAP server side
-class HandlerType{
-  static const String Form   = "PROG";
-  static const String Method = "CLAS";
-  static const String System = "SYS";
-}
-
-/// SAP handler data
-class SapHandler{
-  /// server handler type
-  final String type;
-
-  /// server handler id
-  final String id;
-
-  SapHandler(this.type, this.id);
-
-  String get key => "$type&$id";
-
-  Map<String, dynamic> toJson(){
-    return {
-      "type" : type,
-      "id"   : id,
-    };
-  }
 }
 
 /// The result of processing the request to the SAP server
@@ -149,8 +121,7 @@ class SapConnect {
         uri          : uri,
         sapAuthString: sapAuthString,
         languageID   : languageID,
-        handlerType  : "SYS",
-        handlerID    : "SYS",
+        handlerID    : "SYSTEM",
         action       : "ENTRY",
         actionData   : query,
         context      : context,
@@ -171,6 +142,7 @@ class SapConnect {
           if (_instance  == null) {
             _instance = SapConnect._constructor(cookie, uri, sapLogin, languageID, personLogin);
           }
+          return null;
         },
         postCallback : (Post post) {
           if (post.returnStatus != PostStatus.OK) {
@@ -207,10 +179,6 @@ class SapConnect {
   final Uri _uri;
   final CookieJar _cookie;
 
-  /// Default handler type
-  /// used in [fetchPost] and [fetchPostWS] if parameter `handlerType` is not specified
-  String defaultHandlerType = HandlerType.Method;
-
   /// Default handler ID
   /// used in [fetchPost] and [fetchPostWS] if parameter `handlerID` is not specified
   String defaultHandlerID;
@@ -219,7 +187,6 @@ class SapConnect {
 
   /// Making a request to the server with a blocking screen output ("WaitScreen" look [startWaitScreen])<br>
   /// the WaitScreen obscures the program screen during the execution and processing of the request
-  /// * [handlerType] server handler type
   /// * [handlerID] server handler id
   /// * [action] required, ID of the action/command transmitted to the server
   /// * [actionData] data to perform action/command transmitted to the server
@@ -241,7 +208,6 @@ class SapConnect {
   /// and `errorCheckCallback2`
   /// * [timeoutSec] maximum duration of the operation in seconds
   void fetchPostWS({
-    String handlerType,
     String handlerID,
     String action,
     String actionData = "",
@@ -256,10 +222,8 @@ class SapConnect {
     assert(context != null);
 
     if (errorCheckCallback == null) errorCheckCallback = defaultErrorCheck;
-    if (handlerType == null) handlerType = defaultHandlerType;
     if (handlerID   == null) handlerID   = defaultHandlerID;
 
-    assert(handlerType != null);
     assert(handlerID != null);
 
     _fetchPostWS(
@@ -269,7 +233,6 @@ class SapConnect {
         cookie       : _cookie,
         uri          : _uri,
         languageID   : languageID,
-        handlerType  : handlerType,
         handlerID    : handlerID,
         action       : action,
         actionData   : actionData,
@@ -280,13 +243,11 @@ class SapConnect {
   }
 
   /// Making a request to the server
-  /// * [handlerType] server handler type
   /// * [handlerID] server handler id
   /// * [action] required, ID of the action/command transmitted to the server
   /// * [actionData] data to perform action/command transmitted to the server
   /// * [timeoutSec] maximum duration of the operation in seconds
   Future<Post> fetchPost({
-    String handlerType,
     String handlerID,
     String action,
     String actionData,
@@ -294,18 +255,15 @@ class SapConnect {
   }) async {
     assert(action != null);
 
-    if (handlerType == null) handlerType = defaultHandlerType;
     if (handlerID == null) handlerID = defaultHandlerID;
     if (actionData == null) actionData = "";
 
-    assert(handlerType != null);
     assert(handlerID != null);
 
     return _fetchPost(
         cookie      : _cookie,
         uri         : _uri,
         languageID  : languageID,
-        handlerType : handlerType,
         handlerID   : handlerID,
         action      : action,
         actionData  : actionData,
@@ -319,8 +277,7 @@ class SapConnect {
     if (this._cookie == null) return;
 
     fetchPost(
-      handlerType: "SYS",
-      handlerID  : "LOGOFF",
+      handlerID  : "SYSTEM",
       action     : "LOGOFF",
     );
   }
@@ -328,18 +285,12 @@ class SapConnect {
   /// True = Connection is open
   static bool get entryOk =>_instance != null;
 
-  /// Register fake handler<br>
-  /// may be needed for testing and debugging and not only
-  static void registerFakeHandler(String handlerType, FetchPost fetchPost){
-    _fakeHandlers[handlerType] = fetchPost;
-  }
-
   /// Creates an instance without connecting to the server<br>
   /// must be logged in without connecting to the server, look [OfflineLogin]<br>
   /// and registered fakeHandler, look [registerFakeHandler]
   static void offlineEntry(){
      assert(OfflineLogin.entryOk);
-     assert(_fakeHandlers.isNotEmpty);
+     assert(kFakeHandler != null);
      _instance = SapConnect._constructor(null, null, null, null, null);
   }
 }
@@ -349,7 +300,6 @@ Future<Post> _fetchPost({
   Uri uri,
   String sapAuthString,
   String languageID,
-  String handlerType,
   String handlerID,
   String action,
   String actionData,
@@ -357,9 +307,8 @@ Future<Post> _fetchPost({
 }) async {
   print("action: $action; actiondata: $actionData");
 
-  final fakeHandler = _fakeHandlers[handlerType];
-  if (fakeHandler != null) {
-    final post = await fakeHandler(handlerType, handlerID, action, actionData);
+  if (kFakeHandler != null) {
+    final post = await kFakeHandler(handlerID, action, actionData);
     print("returStatus: ${post.returnStatus}; returnData: ${post.returnData}");
     return post;
   }
@@ -376,8 +325,7 @@ Future<Post> _fetchPost({
     request.headers.add("Content-Length", body.length);
     if (sapAuthString != null && sapAuthString.isNotEmpty) request.headers.add("Authorization", "Basic $sapAuthString");
     request.headers.add("Accept-Language", languageID);
-    request.headers.add("X-YDK-PROC_TYPE", handlerType);
-    request.headers.add("X-YDK-PROC_ID", handlerID);
+    request.headers.add("X-YDK-HANDLER_ID", handlerID);
     request.headers.add("X-YDK-ACTION", action);
     request.cookies.addAll(cookie.loadForRequest(uri)); // Must be before filling the body - otherwise it does not work
     request.add(body);
@@ -438,7 +386,6 @@ void _fetchPostWS({
   CookieJar cookie, Uri uri,
   String sapAuthString,
   String languageID,
-  String handlerType,
   String handlerID,
   String action,
   String actionData,
@@ -459,7 +406,6 @@ void _fetchPostWS({
             uri           : uri,
             sapAuthString : sapAuthString,
             languageID    : languageID,
-            handlerType   : handlerType,
             handlerID     : handlerID,
             action        : action,
             actionData    : actionData,
@@ -477,6 +423,7 @@ void _fetchPostWS({
         }
 
         topPost = post;
+        return null;
       },
       canceled: (){
         if (postCallback != null) postCallback(Post(sapTranslate("CanceledByUser", context : context), PostStatus.Error));
@@ -523,7 +470,7 @@ class OfflineLogin {
     return false;
   }
 
-  static void _loadLoginData() async {
+  static Future<void> _loadLoginData() async {
     if (_loginData != null) return;
 
     final prefs = await SharedPreferences.getInstance();

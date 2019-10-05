@@ -1,0 +1,2 @@
+call dartdoc
+cmd /k

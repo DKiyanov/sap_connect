@@ -38,7 +38,6 @@ class FlightsPageState extends State<FlightsPage> {
     });
 
     SapConnect().fetchPostWS(
-      handlerType  : HandlerType.Method,
       handlerID    : 'YDK_CL_WEBS_FLIGHTS',
       action       : 'GET_FLIGHTS',
       actionData   : query,

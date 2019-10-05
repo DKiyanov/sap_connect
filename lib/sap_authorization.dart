@@ -3,6 +3,7 @@ library sap_authorization;
 
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -85,7 +86,7 @@ class SapStartParams {
   final bool offLineLoginButton;
 
   /// list of SAP handlers for whom localized texts will be downloaded
-  final List<SapHandler> translateHandlerList;
+  final List<String> translateHandlerList;
 
   /// Check for updates at login
   final bool checkAppUpdate;
@@ -102,9 +103,6 @@ class SapStartParams {
 
   /// rout which will be launched after successful entrance without connection with server
   final String offLineNextRouteName;
-
-  /// Default handler type, look [SapConnect.defaultHandlerType]
-  final String defaultHandlerType;
 
   /// Default handler ID, look [SapConnect.defaultHandlerID]
   final String defaultHandlerID;
@@ -129,7 +127,6 @@ class SapStartParams {
     this.checkAppUpdate = false,
     this.onLoginProcess,
     this.onBiometricControlCallback,
-    this.defaultHandlerType,
     this.defaultHandlerID,
   });
 }
@@ -285,8 +282,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<FutureMessage> _savePasswordQuery() async {
     final post = await SapConnect().fetchPost(
-        handlerType: "SYS",
-        handlerID: "",
+        handlerID: "SYSTEM",
         action: "QUERY",
         actionData: "SAVE_PASS");
 
@@ -322,8 +318,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<FutureMessage> _checkSavePasswordQuery() async {
     // проверка изменения режима хранения пароля
     final post = await SapConnect().fetchPost(
-      handlerType: "SYS",
-      handlerID: "",
+      handlerID: "SYSTEM",
       action: "QUERY",
       actionData: "SAVE_PASS",
     );
@@ -401,8 +396,7 @@ class _LoginPageState extends State<LoginPage> {
 
         if (loginSubmitMode == _LoginSubmitMode.ChangePassword) {
           final post = await SapConnect().fetchPost(
-            handlerType: "SYS",
-            handlerID: "SYS",
+            handlerID: "SYSTEM",
             action: "GET_PASSWORD_VALIDATION",
           );
 
@@ -428,13 +422,14 @@ class _LoginPageState extends State<LoginPage> {
           msg = await params.onLoginProcess();
           if (msg != null) return msg;
         }
+
+        return null;
       },
     ).then((entry) {
       if (entry) {
         _saveConnectOptions();
 
         final sapConnect = SapConnect();
-        if (sapConnect.defaultHandlerType == null) sapConnect.defaultHandlerType = params.defaultHandlerType;
         if (sapConnect.defaultHandlerID   == null) sapConnect.defaultHandlerID   = params.defaultHandlerID;
 
         if (loginSubmitMode == null) {
@@ -795,8 +790,7 @@ class _ChangePasswordPageState extends State<_ChangePasswordPage> {
           widget.login, _password, Salt.sapAuthorization);
 
       SapConnect().fetchPostWS(
-          handlerType: "SYS",
-          handlerID: "",
+          handlerID: "SYSTEM",
           action: "CHANGE_PASSWORD",
           actionData: personAuthString,
           context: context,

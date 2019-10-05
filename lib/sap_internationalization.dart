@@ -98,27 +98,26 @@ class SapLocalizations {
   final Locale _locale;
 
   static final _localizedValues = Map<String, dynamic>();
-  static final _sapHandlerList = List<SapHandler>();
+  static final _sapHandlerList = List<String>();
 
-  /// SAP handler key is used, when calling [sapTranslate], the `handlerKey` parameter was not specified<br>
+  /// SAP handler ID is used, when calling [sapTranslate], the `handlerID` parameter was not specified<br>
   /// look [loadFromSAP] parameter `setAsDefault`
-  static String get defaultHandlerKey => _defaultHandlerKey;
-  static String _defaultHandlerKey;
+  static String get defaultHandlerID => _defaultHandlerID;
+  static String _defaultHandlerID;
 
   SapLocalizations(this._locale);
 
-  String _translate(String handlerKey, String key) {
-    return _staticTranslate(handlerKey, key);
+  String _translate(String handlerID, String key) {
+    return _staticTranslate(handlerID, key);
   }
 
-  static String _staticTranslate(String handlerKey, String key) {
-    if (handlerKey == null) handlerKey = "";
-    var ret = _localizedValues["$handlerKey|$key"];
+  static String _staticTranslate(String handlerID, String key) {
+    if (handlerID == null) handlerID = "";
+    var ret = _localizedValues["$handlerID|$key"];
     if (ret == null){
-      if (handlerKey.isNotEmpty) {
-        if (!_sapHandlerList.any((handler) => handler.key == handlerKey)) {
-          final splitList = handlerKey.split("&");
-          throw StateError("translate texts for ${splitList[0]} ${splitList[1]} not loaded");
+      if (handlerID.isNotEmpty) {
+        if (!_sapHandlerList.contains(handlerID)) {
+          throw StateError("translate texts for $handlerID not loaded");
         }
       }
       ret = key;
@@ -147,25 +146,21 @@ class SapLocalizations {
   }
 
   /// Register SAP handler as text provider
-  static void loadFromSAP(String handlerType, String handlerID, {bool setAsDefault = false, bool startLoad = true}){
-    if (handlerType != null && handlerID != null) {
-      var handler = _sapHandlerList.firstWhere((handler) => (handler.type == handlerType && handler.id == handlerID), orElse: ()=> null);
-      if (handler == null) {
-        handler = SapHandler(handlerType, handlerID);
-        _sapHandlerList.add(handler);
-      }
+  static void loadFromSAP(String handlerID, {bool setAsDefault = false, bool startLoad = true}){
+    if (handlerID != null) {
+      if (!_sapHandlerList.contains(handlerID)) _sapHandlerList.add(handlerID);
 
-      if (setAsDefault) _defaultHandlerKey = handler.key;
+      if (setAsDefault) _defaultHandlerID = handlerID;
     }
 
     if (startLoad) loadingFromSAP();
   }
 
   /// Start process to download text from registered SAP handlers
-  static Future<FutureMessage> loadingFromSAP({bool showErrorToast = true, List<SapHandler> handlerList}) async {
+  static Future<FutureMessage> loadingFromSAP({bool showErrorToast = true, List<String> handlerList}) async {
     if (handlerList != null) {
-      handlerList.forEach((newHandler){
-        if (!_sapHandlerList.any((handler)=> (handler.type == newHandler.type && handler.id == newHandler.id))) _sapHandlerList.add(newHandler);
+      handlerList.forEach((newHandlerID){
+        if (!_sapHandlerList.contains(newHandlerID)) _sapHandlerList.add(newHandlerID);
       });
     }
 
@@ -174,7 +169,6 @@ class SapLocalizations {
     final String query = json.encode(_sapHandlerList);
 
     final post = await SapConnect().fetchPost(
-        handlerType: HandlerType.Method,
         handlerID: "YDK_CL_WEBS_UTILS",
         action: "GET_PROG_TEXTS",
         actionData: query
@@ -206,23 +200,23 @@ class SapLocalizations {
 /// dynamic change of language - sometimes redrawing can be done before texts download
 /// as a result text on the screen won't change, because we have a dynamic change of language only on start page
 /// I don't think it is a problem  
-/// * [handlerKey] identifier of SAP's handler from which text was downloaded
-String sapTranslate(String key, {BuildContext context, String handlerKey}){
+/// * [handlerID] identifier of SAP's handler from which text was downloaded
+String sapTranslate(String key, {BuildContext context, String handlerID}){
   if (context == null) {
-    if (handlerKey != null) {
-      return SapLocalizations._staticTranslate(handlerKey, key);
+    if (handlerID != null) {
+      return SapLocalizations._staticTranslate(handlerID, key);
     }
 
-    return SapLocalizations._staticTranslate(SapLocalizations._defaultHandlerKey,  key);
+    return SapLocalizations._staticTranslate(SapLocalizations._defaultHandlerID,  key);
   }
 
   final sapLocalizations = Localizations.of<SapLocalizations>(context, SapLocalizations);
 
-  if (handlerKey != null) {
-    return sapLocalizations._translate(handlerKey, key);
+  if (handlerID != null) {
+    return sapLocalizations._translate(handlerID, key);
   }
 
-  return sapLocalizations._translate(SapLocalizations._defaultHandlerKey,  key);
+  return sapLocalizations._translate(SapLocalizations._defaultHandlerID,  key);
 }
 
 /// Look [MaterialApp.localizationsDelegates]<br>

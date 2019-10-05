@@ -25,7 +25,6 @@ Future<FutureMessage> checkSelfUpdate({String packageName, String prefix = "YDKW
   final version = "${packageInfo.version}+${packageInfo.buildNumber}";
 
   final post = await SapConnect().fetchPost(
-      handlerType : HandlerType.Method,
       handlerID   : "YDK_CL_WEBS_FILE",
       action      : "GET_INFO",
       actionData  : packageName,
@@ -86,7 +85,6 @@ Future<FutureMessage> checkSelfUpdate({String packageName, String prefix = "YDKW
 /// Download file from SAP server, in SAP look transactions SMW0
 Future<FutureMessage> downloadFile(String fileID, String savePath, {bool doOpen = false, bool doExit = false}) async {
   final post = await SapConnect().fetchPost(
-    handlerType: HandlerType.Method,
     handlerID: "YDK_CL_WEBS_FILE",
     action: "GET_CONTENT",
     actionData: fileID,
