@@ -62,7 +62,7 @@ ENDCLASS.
 ```
 
 Dart (reduced)
-```
+``` dart
 void main() {
   Route _getRoute(RouteSettings settings) {
     switch (settings.name){
