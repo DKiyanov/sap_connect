@@ -2,6 +2,7 @@ name: sap_connect
 description: provides connection to the SAP server, making requests to the SAP server, receiving and processing data from the SAP server in response to requests
 version: 0.1.0
 author: Dmitriy Kiyanov <dmkiyanov@gmail.com>
+homepage: https://github.com/DKiyanov/sap_connect
 repository: https://github.com/DKiyanov/sap_connect
 
 environment:
